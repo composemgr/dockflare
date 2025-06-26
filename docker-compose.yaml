@@ -1,0 +1,68 @@
+# nginx proxy address - http://172.17.0.1:62000
+
+name: dockflare
+x-logging: &default-logging
+  options:
+    max-size: '5m'
+    max-file: '1'
+  driver: json-file
+
+services:
+  app:
+    image: alplat/dockflare:stable
+    container_name: dockflare-app
+    hostname: ${BASE_HOST_NAME:-$HOSTNAME}
+    restart: always
+    pull_policy: always
+    logging: *default-logging
+    environment:
+      TZ: ${TZ:-America/New_York}
+      HOSTNAME: ${BASE_HOST_NAME:-$HOSTNAME}
+      STATE_FILE_PATH: /app/data/state.json
+      CF_ZONE_ID: ${CLOUDFLARE_ZONE_ID:?Please set the zone ID - CLOUDFLARE_ZONE_ID}
+      CF_API_TOKEN: ${CLOUDFLARE_API_KEY:?Please set your API key - CLOUDFLARE_API_KEY}
+      CF_ACCOUNT_ID: ${CLOUDFLARE_ACCOUNT_ID:?Please set your account ID - CLOUDFLARE_ACCOUNT_ID}
+      TUNNEL_NAME: ${TUNNEL_NAME:-dockflare}
+      LABEL_PREFIX: cloudflare
+      DEFAULT_NO_TLS_VERIFY: true
+      SCAN_ALL_NETWORKS: false
+      GRACE_PERIOD_SECONDS: 600
+      MAX_CONCURRENT_DNS_OPS: 3
+      RECONCILIATION_BATCH_SIZE: 3
+      CLEANUP_INTERVAL_SECONDS: 300
+      AGENT_STATUS_UPDATE_INTERVAL_SECONDS: 10
+      CLOUDFLARED_NETWORK_NAME: ${CLOUDFLARED_NETWORK_NAME:-cloudflare}
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-127.0.0.0/8,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16}
+    ports:
+      - '172.17.0.1:62000:5000'
+    volumes:
+      - './rootfs/data/dockflare:/app/data:z'
+    labels:
+      - 'traefik.enable=true'
+      - 'cloudflare.enable=true'
+      - 'cloudflare.hostname=dockflare-app.${CLOUDFLARE_ZONE_NAME}'
+      - 'cloudflare.service=http://dockflare-app:3000'
+      - 'traefik.docker.network=proxy'
+      - 'traefik.http.routers.dockflare-app.entrypoints=http'
+      - 'traefik.http.routers.dockflare-app-secure.tls=true'
+      - 'traefik.http.routers.dockflare-app.rule=Host(`${BASE_HOST_NAME:-$HOSTNAME}`)'
+      - 'traefik.http.middlewares.dockflare-app-https-redirect.redirectscheme.scheme=https'
+      - 'traefik.http.routers.dockflare-app.middlewares=dockflare-app-https-redirect'
+      - 'traefik.http.routers.dockflare-app-secure.entrypoints=https'
+      - 'traefik.http.routers.dockflare-app-secure.rule=Host(`${BASE_HOST_NAME:-$HOSTNAME}`)'
+      - 'traefik.http.routers.dockflare-app-secure.tls.certresolver=cloudflare'
+      - 'traefik.http.routers.dockflare-app-secure.service=dockflare-app'
+      - 'traefik.http.services.dockflare-app.loadbalancer.server.port=3000'
+    networks:
+      - dockflare
+      - cloudflare
+      - proxy
+
+networks:
+  dockflare:
+    name: dockflare
+    external: false
+  cloudflare:
+    external: true
+  proxy:
+    external: true
