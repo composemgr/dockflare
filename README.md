@@ -1,27 +1,31 @@
 ## 👋 Welcome to dockflare 🚀
 
-dockflare - Self-hosted Docker Compose deployment
+Cloudflare integration for Docker containers
 
 ## 📋 Description
 
-Dockflare is a containerized service deployed using Docker Compose. This setup provides a complete, production-ready deployment with proper security defaults, logging, and configuration management.
+Cloudflare integration for Docker containers
+
+## 🚀 Services
+
+- **app**: alplat/dockflare:stable
 
 ## 📦 Installation
 
-### Using curl
-```shell
-curl -q -LSsf "https://raw.githubusercontent.com/composemgr/dockflare/main/docker-compose.yaml" | docker compose -f - up -d
+### Option 1: Quick Install
+```bash
+curl -q -LSsf "https://raw.githubusercontent.com/composemgr/dockflare/main/docker-compose.yaml" -o compose.yml
 ```
 
-### Using git
-```shell
+### Option 2: Git Clone
+```bash
 git clone "https://github.com/composemgr/dockflare" ~/.local/srv/docker/dockflare
 cd ~/.local/srv/docker/dockflare
 docker compose up -d
 ```
 
-### Using composemgr
-```shell
+### Option 3: Using composemgr
+```bash
 composemgr install dockflare
 ```
 
@@ -31,9 +35,13 @@ composemgr install dockflare
 
 ```shell
 TZ=America/New_York
-BASE_HOST_NAME=${HOSTNAME}
-BASE_DOMAIN_NAME=
+TUNNEL_NAME=dockflare
+CLOUDFLARED_LABEL_PREFIX=cloudflare
+CLOUDFLARED_NETWORK_NAME=cloudflare
+TRUSTED_PROXIES=127.0.0.0/8,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
 ```
+
+See `docker-compose.yaml` for complete list of configurable options.
 
 ## 🌐 Access
 
@@ -41,43 +49,37 @@ BASE_DOMAIN_NAME=
 
 ## 📂 Volumes
 
-- `./rootfs/config/dockflare` - Configuration files
-- `./rootfs/data/dockflare` - Application data
-
-## 🔐 Security
-
-- Change default passwords after first login
-- Use HTTPS via reverse proxy in production
-- Configure authentication as needed
+- `./rootfs/data/dockflare` - Data storage
 
 ## 🔍 Logging
 
 ```shell
-docker compose logs -f
+docker compose logs -f app
 ```
 
 ## 🛠️ Management
 
-### Start services
-```shell
+```bash
+# Start services
 docker compose up -d
-```
 
-### Stop services
-```shell
+# Stop services
 docker compose down
-```
 
-### Update images
-```shell
+# Update to latest images
 docker compose pull && docker compose up -d
+
+# View logs
+docker compose logs -f
+
+# Restart services
+docker compose restart
 ```
 
 ## 📋 Requirements
 
 - Docker Engine 20.10+
 - Docker Compose V2+
-- Sufficient disk space for data and logs
 
 ## 🤝 Author
 
