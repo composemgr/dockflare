@@ -36,7 +36,7 @@ services:
     ports:
       - '172.17.0.1:62000:5000'
     volumes:
-      - './rootfs/data/dockflare:/app/data:z'
+      - './volumes/data/dockflare:/app/data:z'
     networks:
       - dockflare
 
