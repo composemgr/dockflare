@@ -49,7 +49,7 @@ See `docker-compose.yaml` for complete list of configurable options.
 
 ## 📂 Volumes
 
-- `./rootfs/data/dockflare` - Data storage
+- `./volumes/data/dockflare` - Data storage
 
 ## 🔍 Logging
 
