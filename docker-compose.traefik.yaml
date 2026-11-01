@@ -1,0 +1,90 @@
+name: dockflare
+x-logging: &default-logging
+  options:
+    max-size: '5m'
+    max-file: '1'
+  driver: json-file
+
+services:
+  app:
+    image: alplat/dockflare:latest
+    container_name: dockflare-app
+    domainname: ${BASE_DOMAIN_NAME:-example.com}
+    hostname: ${BASE_HOST_NAME:-$HOSTNAME}
+    restart: always
+    pull_policy: always
+    logging: *default-logging
+    environment:
+      TZ: ${TZ:-America/New_York}
+      CONTAINER_NAME: dockflare-app
+      HOSTNAME: ${BASE_HOST_NAME:-$HOSTNAME}
+      REDIS_URL: redis://dockflare-redis:6379/0
+      DOCKER_HOST: tcp://dockflare-socket-proxy:2375
+    volumes:
+      - './volumes/data/dockflare:/app/data:z'
+    depends_on:
+      - dockflare-redis
+      - dockflare-socket-proxy
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.docker.network=traefik'
+      - 'traefik.http.routers.dockflare-app.entrypoints=http'
+      - 'traefik.http.routers.dockflare-app.rule=Host(`${BASE_HOST_NAME:-$HOSTNAME}`)'
+      - 'traefik.http.routers.dockflare-app.middlewares=dockflare-app-https-redirect'
+      - 'traefik.http.middlewares.dockflare-app-https-redirect.redirectscheme.scheme=https'
+      - 'traefik.http.routers.dockflare-app-secure.entrypoints=https'
+      - 'traefik.http.routers.dockflare-app-secure.rule=Host(`${BASE_HOST_NAME:-$HOSTNAME}`)'
+      - 'traefik.http.routers.dockflare-app-secure.tls.certresolver=cloudflare'
+      - 'traefik.http.routers.dockflare-app-secure.service=dockflare-app'
+      - 'traefik.http.services.dockflare-app.loadbalancer.server.port=5000'
+    networks:
+      - dockflare
+      - traefik
+
+  dockflare-redis:
+    image: redis:alpine
+    container_name: dockflare-redis
+    domainname: ${BASE_DOMAIN_NAME:-example.com}
+    hostname: dockflare-redis
+    restart: always
+    pull_policy: always
+    logging: *default-logging
+    environment:
+      TZ: ${TZ:-America/New_York}
+      CONTAINER_NAME: dockflare-redis
+    volumes:
+      - './volumes/db/redis/dockflare:/data:z'
+    networks:
+      - dockflare
+
+  dockflare-socket-proxy:
+    image: tecnativa/docker-socket-proxy:latest
+    container_name: dockflare-socket-proxy
+    domainname: ${BASE_DOMAIN_NAME:-example.com}
+    hostname: dockflare-socket-proxy
+    restart: always
+    pull_policy: always
+    logging: *default-logging
+    environment:
+      TZ: ${TZ:-America/New_York}
+      CONTAINER_NAME: dockflare-socket-proxy
+      CONTAINERS: 1
+      EVENTS: 1
+      NETWORKS: 1
+      IMAGES: 1
+      POST: 1
+      PING: 1
+      INFO: 1
+      EXEC: 1
+    volumes:
+      - '/var/run/docker.sock:/var/run/docker.sock:ro'
+    networks:
+      - dockflare
+
+
+networks:
+  dockflare:
+    name: dockflare
+    external: false
+  traefik:
+    external: true
