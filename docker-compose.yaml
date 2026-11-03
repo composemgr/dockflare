@@ -22,6 +22,12 @@ services:
       HOSTNAME: ${BASE_HOST_NAME:-$HOSTNAME}
       REDIS_URL: redis://dockflare-redis:6379/0
       DOCKER_HOST: tcp://dockflare-socket-proxy:2375
+    healthcheck:
+      test: ['CMD', 'bash', '-c', 'exec 3<>/dev/tcp/127.0.0.1/5000']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
     ports:
       - '172.17.0.1:64154:5000'
     volumes:
@@ -43,6 +49,12 @@ services:
     environment:
       TZ: ${TZ:-America/New_York}
       CONTAINER_NAME: dockflare-redis
+    healthcheck:
+      test: ['CMD-SHELL', 'redis-cli ping | grep -q PONG']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
     volumes:
       - './volumes/db/redis/dockflare:/data:z'
     networks:
@@ -67,6 +79,12 @@ services:
       PING: 1
       INFO: 1
       EXEC: 1
+    healthcheck:
+      test: ['CMD', 'nc', '-z', '127.0.0.1', '2375']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
     volumes:
       - '/var/run/docker.sock:/var/run/docker.sock:ro'
     networks:
